@@ -1,6 +1,8 @@
 import java.util.List;
 
-public class Term {
+abstract class Term {
+
+    abstract <T> T accept(Visitor<T> visitor, GenerationMode mode);
 
     static class Atom extends Term{
 
@@ -9,10 +11,19 @@ public class Term {
         public Atom(String atomName){
             this.atomName = atomName;
         }
+
+        @Override
+        <T> T accept(Visitor<T> visitor, GenerationMode mode) {
+            return visitor.visitAtom(this, mode);
+        }
     }
 
     static class Anon extends Term{
 
+        @Override
+        <T> T accept(Visitor<T> visitor, GenerationMode mode) {
+            return visitor.visitAnon(this, mode);
+        }
     }
 
     static class Ref extends Term{
@@ -20,6 +31,11 @@ public class Term {
 
         public Ref(String refName){
             this.refName = refName;
+        }
+
+        @Override
+        <T> T accept(Visitor<T> visitor, GenerationMode mode) {
+            return visitor.visitRef(this, mode);
         }
     }
 
@@ -41,5 +57,17 @@ public class Term {
             this.structName = structName;
             this.terms = terms;
         }
+
+        @Override
+        <T> T accept(Visitor<T> visitor, GenerationMode mode) {
+            return visitor.visitStruct(this,  mode);
+        }
+    }
+
+    interface Visitor<T>{
+        T visitAtom(Atom atom, GenerationMode mode);
+        T visitAnon(Anon anon, GenerationMode mode);
+        T visitRef(Ref ref, GenerationMode mode);
+        T visitStruct(Struct struct, GenerationMode mode);
     }
 }
