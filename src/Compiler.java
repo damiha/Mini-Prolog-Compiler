@@ -31,6 +31,42 @@ public class Compiler implements Term.Visitor<Code>, Goal.Visitor<Code> {
         return goal.accept(this, G);
     }
 
+    public Code codeP(Predicate predicate){
+
+        int n = predicate.clauses.size();
+
+        if(n == 1){
+            return codeC(predicate.clauses.get(0));
+        }
+
+        Code code = new Code();
+
+        code.addInstruction(new Instr.SetBackTrackPoint());
+
+        String[] jumpLabels = new String[n];
+
+        for(int i = 0; i < n; i++){
+            jumpLabels[i] = code.getNewJumpLabel();
+        }
+
+        // generate the try instructions
+        for(int i = 0; i < n - 1; i++){
+            code.addInstruction(new Instr.Try(jumpLabels[i]));
+        }
+
+        code.addInstruction(new Instr.DeleteBackTrackPoint());
+
+        code.addInstruction(new Instr.Jump(jumpLabels[n - 1]));
+
+        for(int i = 0; i < n; i++){
+            Clause clause = predicate.clauses.get(i);
+
+            code.addCode(codeC(clause), jumpLabels[i]);
+        }
+
+        return code;
+    }
+
     public Code codeC(Clause clause){
 
         Code code = new Code();
@@ -54,6 +90,41 @@ public class Compiler implements Term.Visitor<Code>, Goal.Visitor<Code> {
         code.addInstruction(new Instr.PopEnv());
 
         return code;
+    }
+
+    public Code code(Program program){
+        Code code = new Code();
+
+        String labelGoalFailed = code.getNewJumpLabel();
+
+        code.addInstruction(new Instr.Init(labelGoalFailed));
+
+        // d is the free parameters in the goal
+        // we want to print those
+        int d = getFreeVars(program.query);
+
+        code.addInstruction(new Instr.PushEnv(d));
+
+        code.addCode(codeG(program.query));
+
+        code.addInstruction(new Instr.Halt(d));
+
+        code.addInstruction(new Instr.No(), labelGoalFailed);
+
+        // now translate all the predicates
+        for(Predicate predicate : program.predicates){
+            code.addCode(codeP(predicate));
+        }
+
+        return code;
+    }
+
+    private int getFreeVars(Goal goal){
+        env = new Environment();
+
+        addVarTermsToEnv(goal);
+
+        return env.size();
     }
 
     private void addVarTermsToEnv(Term term){

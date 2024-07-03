@@ -230,4 +230,68 @@ public class CompilerTest {
 
         assertEquals(expected.toString(), compiled.toString());
     }
+
+    @Test
+    public void testCompilePredicate1(){
+        // s(X) :- t(X)
+        // s(X) :- X = a
+
+        Predicate predicate = new Predicate(List.of(
+                new Clause(new Term.Struct("s", List.of(new Term.Var("X"))), List.of(new Goal.PredicateCall(new Term.Struct("t", List.of(new Term.Ref("X")))))),
+                new Clause(new Term.Struct("s", List.of(new Term.Var("X"))), List.of(new Goal.Unification(new Term.Ref("X"), new Term.Atom("a"))))
+        ));
+
+        Compiler compiler = new Compiler();
+        compiler.isUnificationOptimized = true;
+
+        Code compiled = compiler.codeP(predicate);
+
+        Code expected = new Code();
+
+        expected.addInstruction(new Instr.SetBackTrackPoint());
+        expected.addInstruction(new Instr.Try("_0"));
+        expected.addInstruction(new Instr.DeleteBackTrackPoint());
+        expected.addInstruction(new Instr.Jump("_1"));
+
+        expected.addInstruction(new Instr.PushEnv(1), "_0");
+        expected.addInstruction(new Instr.Mark("_2"));
+        expected.addInstruction(new Instr.PutRef(1));
+        expected.addInstruction(new Instr.Call("t", 1));
+        expected.addInstruction(new Instr.PopEnv(), "_2");
+
+        expected.addInstruction(new Instr.PushEnv(1), "_1");
+        expected.addInstruction(new Instr.PutRef(1));
+        expected.addInstruction(new Instr.UAtom("a"));
+        expected.addInstruction(new Instr.PopEnv());
+
+        assertEquals(expected.toString(), compiled.toString());
+    }
+
+    @Test
+    public void testCompileProgram1(){
+
+        // t(X) :- X = b
+        // p :- q(X), t(X)
+        // q(X) :- s(X)
+        // s(X) :- t(X)
+        // s(X) :- X = a
+        // ? p
+
+        // expected behavior: true (X = b and rule s(X) :- t(X) has to be used)
+        Program program = new Program(
+                List.of(new Predicate(List.of(
+                        new Clause(new Term.Struct("t", List.of(new Term.Var("X"))), List.of(new Goal.Unification(new Term.Ref("X"), new Term.Atom("b")))),
+                        new Clause(new Term.Struct("p", List.of()), List.of(
+                                new Goal.PredicateCall(new Term.Struct("q", List.of(new Term.Ref("X")))),
+                                new Goal.PredicateCall(new Term.Struct("t", List.of(new Term.Ref("X"))))
+                                )),
+                        new Clause(new Term.Struct("q", List.of(new Term.Var("X"))), List.of(new Goal.PredicateCall(new Term.Struct("s", List.of(new Term.Ref("X"))))))
+                )), new Predicate(List.of(
+                        new Clause(new Term.Struct("s", List.of(new Term.Var("X"))), List.of(new Goal.PredicateCall(new Term.Struct("t", List.of(new Term.Ref("X")))))),
+                        new Clause(new Term.Struct("s", List.of(new Term.Var("X"))), List.of(new Goal.Unification(new Term.Ref("X"), new Term.Atom("a"))))
+                )
+                )),
+                new Goal.PredicateCall(new Term.Struct("p", List.of()))
+        );
+    }
 }
