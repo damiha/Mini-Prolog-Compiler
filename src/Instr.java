@@ -1,6 +1,6 @@
 public class Instr {
 
-    static class PutAtom{
+    static class PutAtom extends Instr{
 
         String atomName;
 
@@ -13,7 +13,7 @@ public class Instr {
         }
     }
 
-    static class PutVar{
+    static class PutVar extends Instr{
 
         // this is an address relative to the current frame pointer
         int relativeAddress;
@@ -27,7 +27,7 @@ public class Instr {
         }
     }
 
-    static class PutRef{
+    static class PutRef extends Instr{
 
         // this is an address relative to the current frame pointer
         int relativeAddress;
@@ -44,7 +44,7 @@ public class Instr {
     // you might have
     // mortal(sokrates)
     // and you want to query mortal(_) just to see that the predicate is satisfiable
-    static class PutAnon{
+    static class PutAnon extends Instr{
 
         public PutAnon(){}
 
@@ -53,7 +53,7 @@ public class Instr {
         }
     }
 
-    static class PutStruct{
+    static class PutStruct extends Instr{
 
         String functionName;
         int arity;
@@ -68,4 +68,29 @@ public class Instr {
         }
     }
 
+    static class Mark extends Instr{
+        String jumpLabel;
+
+        public Mark(String jumpLabel){
+            this.jumpLabel = jumpLabel;
+        }
+
+        public String toString(){
+            return String.format("Mark %s", jumpLabel);
+        }
+    }
+
+    static class Call extends Instr{
+        String functionName;
+        int arity;
+
+        public Call(String functionName, int arity){
+            this.functionName = functionName;
+            this.arity = arity;
+        }
+
+        public String toString(){
+            return String.format("Call %s/%d", functionName, arity);
+        }
+    }
 }

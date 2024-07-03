@@ -1,4 +1,5 @@
 import java.util.List;
+import compiler.GenerationMode;
 
 abstract class Term {
 
