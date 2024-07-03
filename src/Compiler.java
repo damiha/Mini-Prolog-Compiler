@@ -35,11 +35,15 @@ public class Compiler implements Term.Visitor<Code>, Goal.Visitor<Code> {
 
         int n = predicate.clauses.size();
 
-        if(n == 1){
-            return codeC(predicate.clauses.get(0));
-        }
-
         Code code = new Code();
+
+        // mark the beginning first
+        code.setPredicateLabelAtEnd(predicate.getPredicateLabel());
+
+        if(n == 1){
+            code.addCode(codeC(predicate.clauses.get(0)));
+            return code;
+        }
 
         code.addInstruction(new Instr.SetBackTrackPoint());
 

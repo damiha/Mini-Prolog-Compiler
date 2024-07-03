@@ -89,9 +89,54 @@ public class Parser {
         // question mark has been consumed
         Goal query = goal(new Environment());
 
-        Predicate predicate = new Predicate(clauses);
+        List<Predicate> predicates = getPredicatesGroupedByClauseHeads(clauses);
 
-        return new Program(List.of(predicate), query);
+        return new Program(predicates, query);
+    }
+
+    private List<Predicate> getPredicatesGroupedByClauseHeads(List<Clause> clauses){
+
+        boolean[] alreadyInPredicate = new boolean[clauses.size()];
+
+        List<Predicate> predicates = new ArrayList<>();
+
+        for(int i = 0; i < clauses.size(); i++){
+
+            if(alreadyInPredicate[i]){
+                continue;
+            }
+
+            // found a clause that's not in a predicate already
+            List<Clause> clausesForPredicate = new ArrayList<>();
+
+            Clause defininingClause = clauses.get(i);
+
+            String predicateName  = defininingClause.predicateName();
+            int arity = defininingClause.arity();
+
+            clausesForPredicate.add(defininingClause);
+
+            // at least all the previous clauses must have been included
+            for(int j = i + 1; j < clauses.size(); j++){
+
+                if(alreadyInPredicate[j]){
+                    continue;
+                }
+
+                Clause potentiallyIncludedClause = clauses.get(j);
+
+                if(potentiallyIncludedClause.predicateName().equals(predicateName) && potentiallyIncludedClause.arity() == arity){
+                    clausesForPredicate.add(potentiallyIncludedClause);
+                    alreadyInPredicate[j] = true;
+                }
+            }
+
+            // processed the ith clause
+            predicates.add(new Predicate(clausesForPredicate));
+            alreadyInPredicate[i] = true;
+        }
+
+        return predicates;
     }
 
     private void error(String message){
