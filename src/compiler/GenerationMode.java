@@ -1,3 +1,6 @@
+
+package compiler;
+
 public enum GenerationMode {
 
     // for terms
