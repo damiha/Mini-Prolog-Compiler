@@ -218,16 +218,16 @@ public class Instr {
 
     static class PutStruct extends Instr{
 
-        String functionName;
+        String structName;
         int arity;
 
-        public PutStruct(String functionName, int arity){
-            this.functionName = functionName;
+        public PutStruct(String structName, int arity){
+            this.structName = structName;
             this.arity = arity;
         }
 
         public String toString(){
-            return String.format("PutStruct %s/%d", functionName, arity);
+            return String.format("PutStruct %s/%d", structName, arity);
         }
     }
 
@@ -263,16 +263,16 @@ public class Instr {
     }
 
     static class Call extends Instr{
-        String functionName;
+        String PredicateName;
         int arity;
 
-        public Call(String functionName, int arity){
-            this.functionName = functionName;
+        public Call(String PredicateName, int arity){
+            this.PredicateName = PredicateName;
             this.arity = arity;
         }
 
         public String toString(){
-            return String.format("Call %s/%d", functionName, arity);
+            return String.format("Call %s/%d", PredicateName, arity);
         }
     }
 
