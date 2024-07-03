@@ -21,4 +21,8 @@ public class Environment {
     public int get(String varName){
         return data.get(varName);
     }
+
+    public int size(){
+        return data.size();
+    }
 }

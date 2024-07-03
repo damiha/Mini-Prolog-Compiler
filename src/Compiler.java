@@ -31,6 +31,51 @@ public class Compiler implements Term.Visitor<Code>, Goal.Visitor<Code> {
         return goal.accept(this, G);
     }
 
+    public Code codeC(Clause clause){
+
+        Code code = new Code();
+
+        // a new environment for every clause
+        env = new Environment();
+
+        // add all the variables to the environment
+        addVarTermsToEnv(clause.clauseHead);
+
+        for(Goal goal : clause.goals){
+            addVarTermsToEnv(goal);
+        }
+
+        code.addInstruction(new Instr.PushEnv(env.size()));
+
+        for(Goal goal : clause.goals){
+            code.addCode(codeG(goal));
+        }
+
+        code.addInstruction(new Instr.PopEnv());
+
+        return code;
+    }
+
+    private void addVarTermsToEnv(Term term){
+        if(term instanceof Term.Var){
+            env.put(((Term.Var) term).varName);
+        }
+        else if(term instanceof Term.Struct){
+            for(Term subTerm : ((Term.Struct) term).terms){
+                addVarTermsToEnv(subTerm);
+            }
+        }
+    }
+
+    private void addVarTermsToEnv(Goal goal){
+        if(goal instanceof Goal.PredicateCall){
+            addVarTermsToEnv(((Goal.PredicateCall) goal).struct);
+        }
+        else if(goal instanceof Goal.Unification){
+            addVarTermsToEnv(((Goal.Unification) goal).leftHandSide);
+            addVarTermsToEnv(((Goal.Unification) goal).rightHandSide);
+        }
+    }
 
     @Override
     public Code visitAtom(Term.Atom atom, GenerationMode mode) {
@@ -55,9 +100,11 @@ public class Compiler implements Term.Visitor<Code>, Goal.Visitor<Code> {
 
         Code code = new Code();
 
+        /*
         if(!env.has(var.varName)){
             env.put(var.varName);
         }
+        */
 
         if(mode == A) {
             code.addInstruction(new Instr.PutVar(env.get(var.varName)));

@@ -115,6 +115,25 @@ public class Instr {
         }
     }
 
+    static class PushEnv extends Instr{
+        int m;
+
+        public PushEnv(int m){
+            this.m = m;
+        }
+
+        public String toString(){
+            return String.format("PushEnv %d", m);
+        }
+    }
+
+    static class PopEnv extends Instr{
+
+        public String toString(){
+            return "PopEnv";
+        }
+    }
+
     static class Son extends Instr{
 
         int i;
