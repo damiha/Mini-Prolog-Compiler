@@ -248,6 +248,8 @@ public class CompilerTest {
 
         Code expected = new Code();
 
+        expected.setPredicateLabelAtEnd("s/1");
+
         expected.addInstruction(new Instr.SetBackTrackPoint());
         expected.addInstruction(new Instr.Try("_0"));
         expected.addInstruction(new Instr.DeleteBackTrackPoint());
@@ -294,6 +296,89 @@ public class CompilerTest {
                 )),
                 new Goal.PredicateCall(new Term.Struct("p", List.of()))
         );
+
+        Compiler compiler = new Compiler();
+        compiler.isUnificationOptimized = true;
+
+        Code compiled = compiler.code(program);
+
+        Code expected = new Code();
+        expected.addInstruction(new Instr.Init("_0"));
+        expected.addInstruction(new Instr.PushEnv(0));
+
+        // codeG query
+        expected.addInstruction(new Instr.Mark("_1"));
+        expected.addInstruction(new Instr.Call("p", 0));
+
+        expected.addInstruction(new Instr.Halt(0), "_1");
+        expected.addInstruction(new Instr.No(), "_0");
+
+        expected.setPredicateLabelAtEnd("t/1");
+        expected.addInstruction(new Instr.PushEnv(1));
+        expected.addInstruction(new Instr.PutRef(1));
+        expected.addInstruction(new Instr.UAtom("b"));
+        expected.addInstruction(new Instr.PopEnv());
+
+        expected.setPredicateLabelAtEnd("p/0");
+
+        expected.addInstruction(new Instr.PushEnv(1));
+        expected.addInstruction(new Instr.Mark("_2"));
+        expected.addInstruction(new Instr.PutVar(1));
+        expected.addInstruction(new Instr.Call("q", 1));
+
+        expected.addInstruction(new Instr.Mark("_3"), "_2");
+        expected.addInstruction(new Instr.PutRef(1));
+        expected.addInstruction(new Instr.Call("t", 1));
+        expected.addInstruction(new Instr.PopEnv(), "_3");
+
+        expected.setPredicateLabelAtEnd("q/1");
+
+        expected.addInstruction(new Instr.PushEnv(1));
+        expected.addInstruction(new Instr.Mark("_4"));
+        expected.addInstruction(new Instr.PutRef(1));
+        expected.addInstruction(new Instr.Call("s", 1));
+
+        expected.addInstruction(new Instr.PopEnv(), "_4");
+
+        expected.setPredicateLabelAtEnd("s/1");
+
+        expected.addInstruction(new Instr.SetBackTrackPoint());
+        expected.addInstruction(new Instr.Try("_5"));
+        expected.addInstruction(new Instr.DeleteBackTrackPoint());
+        expected.addInstruction(new Instr.Jump("_6"));
+
+        expected.addInstruction(new Instr.PushEnv(1), "_5");
+        expected.addInstruction(new Instr.Mark("_7"));
+        expected.addInstruction(new Instr.PutRef(1));
+        expected.addInstruction(new Instr.Call("t", 1));
+
+        expected.addInstruction(new Instr.PopEnv(), "_7");
+        expected.addInstruction(new Instr.PushEnv(1), "_6");
+
+        expected.addInstruction(new Instr.PutRef(1));
+        expected.addInstruction(new Instr.UAtom("a"));
+        expected.addInstruction(new Instr.PopEnv());
+
+        assertEquals(expected.toString(), compiled.toString());
+    }
+
+    @Test
+    public void testCompileProgram2(){
+
+        String source = """
+                t(X) :- X = b.
+                p :- q(X), t(X).
+                q(X) :- s(X).
+                s(X) :- t(X).
+                s(X) :- X = a.
+                ?p.
+                """;
+
+        Lexer lexer = new Lexer(source);
+
+        Parser parser = new Parser(lexer.getTokens());
+
+        Program program = parser.parse();
 
         Compiler compiler = new Compiler();
         compiler.isUnificationOptimized = true;

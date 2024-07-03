@@ -172,7 +172,13 @@ public class Parser {
         if(term instanceof Term.Struct){
             return (Term.Struct) term;
         }
-        throw new RuntimeException("Expected a clause head of the form p(X_1, ..., X_n)");
+        else if(term instanceof Term.Atom){
+            // a clause head can also have zero arguments
+            return new Term.Struct(((Term.Atom) term).atomName, List.of());
+        }
+        else {
+            throw new RuntimeException("Expected clause head.");
+        }
     }
 
     // parse as many goals as you can before the dot comes
@@ -200,8 +206,12 @@ public class Parser {
             if(first instanceof Term.Struct){
                 return new Goal.PredicateCall((Term.Struct) first);
             }
+            else if(first instanceof Term.Atom){
+                // a predicate call can have zero arguments
+                return new Goal.PredicateCall(new Term.Struct(((Term.Atom) first).atomName, List.of()));
+            }
             else{
-                throw new RuntimeException("Predicate call must be of the form p(t_1, ..., t_n)");
+                throw new RuntimeException("A predicate call is expected.");
             }
         }
     }
