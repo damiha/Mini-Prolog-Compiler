@@ -13,6 +13,18 @@ public class Instr {
         }
     }
 
+    static class UAtom extends Instr{
+        String atomName;
+
+        public UAtom(String atomName){
+            this.atomName = atomName;
+        }
+
+        public String toString(){
+            return String.format("UAtom %s", atomName);
+        }
+    }
+
     static class PutVar extends Instr{
 
         // this is an address relative to the current frame pointer
@@ -24,6 +36,20 @@ public class Instr {
 
         public String toString(){
             return String.format("PutVar %d", relativeAddress);
+        }
+    }
+
+    static class UVar extends Instr{
+
+        // this is an address relative to the current frame pointer
+        int relativeAddress;
+
+        public UVar(int relativeAddress){
+            this.relativeAddress = relativeAddress;
+        }
+
+        public String toString(){
+            return String.format("UVar %d", relativeAddress);
         }
     }
 
@@ -41,6 +67,20 @@ public class Instr {
         }
     }
 
+    static class URef extends Instr{
+
+        // this is an address relative to the current frame pointer
+        int relativeAddress;
+
+        public URef(int relativeAddress){
+            this.relativeAddress = relativeAddress;
+        }
+
+        public String toString(){
+            return String.format("URef %s", relativeAddress);
+        }
+    }
+
     // you might have
     // mortal(sokrates)
     // and you want to query mortal(_) just to see that the predicate is satisfiable
@@ -50,6 +90,41 @@ public class Instr {
 
         public String toString(){
             return "PutAnon";
+        }
+    }
+
+    static class Pop extends Instr{
+
+        public Pop(){}
+
+        public String toString(){
+            return "Pop";
+        }
+    }
+
+    static class Up extends Instr{
+
+        String jumpLabel;
+
+        public Up(String jumpLabel){
+            this.jumpLabel = jumpLabel;
+        }
+
+        public String toString(){
+            return String.format("Up %s", jumpLabel);
+        }
+    }
+
+    static class Son extends Instr{
+
+        int i;
+
+        public Son(int i){
+            this.i = i;
+        }
+
+        public String toString(){
+            return String.format("Son %d", i);
         }
     }
 
@@ -67,6 +142,25 @@ public class Instr {
             return String.format("PutStruct %s/%d", functionName, arity);
         }
     }
+
+    static class UStruct extends Instr{
+
+        String functionName;
+        int arity;
+        String jumpLabel;
+
+        public UStruct(String functionName, int arity, String jumpLabel){
+            this.functionName = functionName;
+            this.arity = arity;
+            this.jumpLabel = jumpLabel;
+        }
+
+        public String toString(){
+            return String.format("UStruct %s/%d %s", functionName, arity, jumpLabel);
+        }
+    }
+
+
 
     static class Mark extends Instr{
         String jumpLabel;
@@ -91,6 +185,43 @@ public class Instr {
 
         public String toString(){
             return String.format("Call %s/%d", functionName, arity);
+        }
+    }
+
+    static class Bind extends Instr{
+
+        @Override
+        public String toString(){
+            return "Bind";
+        }
+    }
+
+    static class Check extends Instr{
+
+        int i;
+
+        public Check(int i){
+            this.i = i;
+        }
+
+        @Override
+        public String toString(){
+            return String.format("Check %d", i);
+        }
+    }
+
+    static class Fail extends Instr{
+
+        @Override
+        public String toString(){
+            return "Fail";
+        }
+    }
+
+    static class Unify extends Instr{
+        @Override
+        public String toString(){
+            return "Unify";
         }
     }
 }
