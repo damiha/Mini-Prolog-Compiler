@@ -77,16 +77,6 @@ public class Lexer {
                         throw new RuntimeException("\\ expects either + or =.");
                     }
                     break;
-                case '_':
-                    // _x is also a variable just like X
-                    if(isAlpha(peek())){
-                        identifier();
-                    }
-                    else{
-                        addToken(TokenType.UNDERSCORE);
-                    }
-                    cAlreadyMatched = true;
-                    break;
                 case '?':
                     addToken(TokenType.QUESTION_MARK);
                     break;
@@ -97,14 +87,12 @@ public class Lexer {
             }
 
             // for identifies (can be keywords)
-            if(!cAlreadyMatched) {
-                if (isAlpha(c)) {
+            if (isAlpha(c)) {
 
-                    // either keyword or variable
-                    identifier();
-                } else if (isNumeric(c)) {
-                    number();
-                }
+                // either keyword or variable
+                identifier();
+            } else if (isNumeric(c)) {
+                number();
             }
         }
 

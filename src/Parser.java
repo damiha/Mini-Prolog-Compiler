@@ -1,9 +1,6 @@
 import lexer.TokenType;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import static lexer.TokenType.*;
 
@@ -85,10 +82,12 @@ public class Parser {
 
         while(!match(QUESTION_MARK)){
             clauses.add(clause());
+            // every clause ends with a dot
+            consume(DOT, "Dot expected at end of clause");
         }
 
         // question mark has been consumed
-        Goal query = predicateCall();
+        Goal query = goal(new Environment());
 
         Predicate predicate = new Predicate(clauses);
 
@@ -106,7 +105,7 @@ public class Parser {
 
         Environment clauseEnv = new Environment();
 
-        ClauseHead clauseHead = clauseHead(clauseEnv);
+        Term.Struct clauseHead = clauseHead(clauseEnv);
 
         // clause in 'normal form' so we need to parse the goals
         if(match(IMPLIED_BY)){
@@ -121,47 +120,127 @@ public class Parser {
         }
     }
 
-    private ClauseHead clauseHead(Environment clauseEnv){
+    private Term.Struct clauseHead(Environment clauseEnv){
 
-        Token headName = consume(IDENTIFIER, "A clause must start with a clause head (needs name).");
+        Term term = term(clauseEnv);
 
-        // if this is empty, no unification necessary and the statement is simply true
-        // good_weather. would just be a synonym for true
-        List<Term> headVars = new ArrayList<>();
-
-
-        if(match(LEFT_PAREN)){
-
-            // has to  have minimum one parameter
-            // we don't allow good_weather().
-
-            do{
-                // in the clause head, they can't be nested
-                Token name = consume(IDENTIFIER, "clause head needs parameter. Cannot be ()");
-
-
-            }while(match(COMMA));
-
-            consume(RIGHT_PAREN, "Missing closing ).");
+        if(term instanceof Term.Struct){
+            return (Term.Struct) term;
         }
-
-        return new ClauseHead(headName.lexeme, headVars);
+        throw new RuntimeException("Expected a clause head of the form p(X_1, ..., X_n)");
     }
 
     // parse as many goals as you can before the dot comes
     private List<Goal> goals(Environment clauseEnv){
-        return null;
+        List<Goal> goals = new ArrayList<>();
+
+        do{
+            goals.add(goal(clauseEnv));
+        }while(match(COMMA));
+
+        return goals;
+    }
+
+    private Goal goal(Environment clauseEnv){
+        // either a unification or a predicate call
+        Term first = term(clauseEnv);
+
+        // X = t (unification)
+        if(match(EQUAL)){
+            Term second = term(clauseEnv);
+
+            return new Goal.Unification(first, second);
+        }
+        else{
+            if(first instanceof Term.Struct){
+                return new Goal.PredicateCall((Term.Struct) first);
+            }
+            else{
+                throw new RuntimeException("Predicate call must be of the form p(t_1, ..., t_n)");
+            }
+        }
+    }
+
+    private Term term(Environment clauseEnv){
+
+        String name = consume(IDENTIFIER, "Identifier expected.").lexeme;
+
+        if(match(LEFT_PAREN)){
+
+            List<Term> terms = new ArrayList<>();
+
+            do{
+                terms.add(term(clauseEnv));
+            }while(match(COMMA));
+
+            consume(RIGHT_PAREN, "Missing closing parentheses");
+
+            return new Term.Struct(name, terms);
+        }
+        else {
+            if (name.equals("_")) {
+                return new Term.Anon();
+            } else if (startsWithLowerCaseLetter(name)) {
+                return new Term.Atom(name);
+            } else {
+                if (clauseEnv.has(name)) {
+                    return new Term.Ref(name);
+                } else {
+                    clauseEnv.put(name);
+                    return new Term.Var(name);
+                }
+            }
+        }
     }
 
     private boolean startsWithLowerCaseLetter(String name){
-        return false;
+        char c = name.charAt(0);
+        return 'a' <= c && c <= 'z';
     }
 
-    private Clause normalizeSimpleClause(ClauseHead clauseHead, Environment clauseEnv){
-        return null;
-    }
+    private Clause normalizeSimpleClause(Term.Struct clauseHead, Environment clauseEnv){
 
-    private Goal predicateCall(){
-        return null;
+        List<Goal> unifications = new ArrayList<>();
+        int auxiliaryVars = 0;
+
+        Map<String, String> atomsToVars = new HashMap<>();
+
+        for(int i = 0; i < clauseHead.terms.size(); i++){
+            Term term = clauseHead.terms.get(i);
+
+            // Make a unification out of this
+            // human(socrates)
+            // human(X) :- X = socrates
+            if(term instanceof Term.Atom){
+
+                // invent a new variable
+                String varName;
+                boolean isNewVar = false;
+                if(atomsToVars.containsKey(((Term.Atom) term).atomName)){
+                    varName = atomsToVars.get(((Term.Atom) term).atomName);
+                }
+                else{
+                    varName = String.format("A_%d", ++auxiliaryVars);
+                    isNewVar = true;
+                    atomsToVars.put(((Term.Atom) term).atomName, varName);
+                }
+
+                // substitute variable into clause head
+                if(isNewVar){
+                    clauseHead.terms.set(i, new Term.Var(varName));
+
+                    // create new unification
+                    unifications.add(new Goal.Unification(new Term.Ref(varName), new Term.Atom(((Term.Atom) term).atomName)));
+                }
+
+                else{
+                    // no new unification is needed
+                    clauseHead.terms.set(i, new Term.Ref(varName));
+                }
+            }
+        }
+
+        // the clause head is changed now
+        return new Clause(clauseHead, unifications);
     }
 }

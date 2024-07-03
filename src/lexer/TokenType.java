@@ -27,8 +27,5 @@ public enum TokenType {
     QUESTION_MARK,
 
     // for later
-    NUMBER,
-
-    // for an anonymous parameter
-    UNDERSCORE
+    NUMBER
 }

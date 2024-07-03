@@ -17,4 +17,8 @@ public class Environment {
     public void put(String varName){
         data.put(varName, data.size() + 1);
     }
+
+    public int get(String varName){
+        return data.get(varName);
+    }
 }

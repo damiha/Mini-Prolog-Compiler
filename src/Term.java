@@ -26,6 +26,19 @@ abstract class Term {
         }
     }
 
+    static class Var extends Term{
+        String varName;
+
+        public Var(String refName){
+            this.varName = refName;
+        }
+
+        @Override
+        <T> T accept(Visitor<T> visitor, GenerationMode mode) {
+            return visitor.visitVar(this, mode);
+        }
+    }
+
     static class Ref extends Term{
         String refName;
 
@@ -66,6 +79,7 @@ abstract class Term {
 
     interface Visitor<T>{
         T visitAtom(Atom atom, GenerationMode mode);
+        T visitVar(Var var, GenerationMode mode);
         T visitAnon(Anon anon, GenerationMode mode);
         T visitRef(Ref ref, GenerationMode mode);
         T visitStruct(Struct struct, GenerationMode mode);
