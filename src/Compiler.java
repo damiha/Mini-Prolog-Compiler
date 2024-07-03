@@ -31,6 +31,126 @@ public class Compiler implements Term.Visitor<Code>, Goal.Visitor<Code> {
         return goal.accept(this, G);
     }
 
+    public Code codeP(Predicate predicate){
+
+        int n = predicate.clauses.size();
+
+        Code code = new Code();
+
+        // mark the beginning first
+        code.setPredicateLabelAtEnd(predicate.getPredicateLabel());
+
+        if(n == 1){
+            code.addCode(codeC(predicate.clauses.get(0)));
+            return code;
+        }
+
+        code.addInstruction(new Instr.SetBackTrackPoint());
+
+        String[] jumpLabels = new String[n];
+
+        for(int i = 0; i < n; i++){
+            jumpLabels[i] = code.getNewJumpLabel();
+        }
+
+        // generate the try instructions
+        for(int i = 0; i < n - 1; i++){
+            code.addInstruction(new Instr.Try(jumpLabels[i]));
+        }
+
+        code.addInstruction(new Instr.DeleteBackTrackPoint());
+
+        code.addInstruction(new Instr.Jump(jumpLabels[n - 1]));
+
+        for(int i = 0; i < n; i++){
+            Clause clause = predicate.clauses.get(i);
+
+            code.addCode(codeC(clause), jumpLabels[i]);
+        }
+
+        return code;
+    }
+
+    public Code codeC(Clause clause){
+
+        Code code = new Code();
+
+        // a new environment for every clause
+        env = new Environment();
+
+        // add all the variables to the environment
+        addVarTermsToEnv(clause.clauseHead);
+
+        for(Goal goal : clause.goals){
+            addVarTermsToEnv(goal);
+        }
+
+        code.addInstruction(new Instr.PushEnv(env.size()));
+
+        for(Goal goal : clause.goals){
+            code.addCode(codeG(goal));
+        }
+
+        code.addInstruction(new Instr.PopEnv());
+
+        return code;
+    }
+
+    public Code code(Program program){
+        Code code = new Code();
+
+        String labelGoalFailed = code.getNewJumpLabel();
+
+        code.addInstruction(new Instr.Init(labelGoalFailed));
+
+        // d is the free parameters in the goal
+        // we want to print those
+        int d = getFreeVars(program.query);
+
+        code.addInstruction(new Instr.PushEnv(d));
+
+        code.addCode(codeG(program.query));
+
+        code.addInstruction(new Instr.Halt(d));
+
+        code.addInstruction(new Instr.No(), labelGoalFailed);
+
+        // now translate all the predicates
+        for(Predicate predicate : program.predicates){
+            code.addCode(codeP(predicate));
+        }
+
+        return code;
+    }
+
+    private int getFreeVars(Goal goal){
+        env = new Environment();
+
+        addVarTermsToEnv(goal);
+
+        return env.size();
+    }
+
+    private void addVarTermsToEnv(Term term){
+        if(term instanceof Term.Var){
+            env.put(((Term.Var) term).varName);
+        }
+        else if(term instanceof Term.Struct){
+            for(Term subTerm : ((Term.Struct) term).terms){
+                addVarTermsToEnv(subTerm);
+            }
+        }
+    }
+
+    private void addVarTermsToEnv(Goal goal){
+        if(goal instanceof Goal.PredicateCall){
+            addVarTermsToEnv(((Goal.PredicateCall) goal).struct);
+        }
+        else if(goal instanceof Goal.Unification){
+            addVarTermsToEnv(((Goal.Unification) goal).leftHandSide);
+            addVarTermsToEnv(((Goal.Unification) goal).rightHandSide);
+        }
+    }
 
     @Override
     public Code visitAtom(Term.Atom atom, GenerationMode mode) {
@@ -55,9 +175,11 @@ public class Compiler implements Term.Visitor<Code>, Goal.Visitor<Code> {
 
         Code code = new Code();
 
+        /*
         if(!env.has(var.varName)){
             env.put(var.varName);
         }
+        */
 
         if(mode == A) {
             code.addInstruction(new Instr.PutVar(env.get(var.varName)));

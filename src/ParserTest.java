@@ -56,4 +56,25 @@ public class ParserTest {
         // parsed result looks good
         System.out.println();
     }
+
+    @Test
+    public void testParserWholeProgram(){
+        String source = """
+                t(X) :- X = b.
+                p(X) :- q(X), t(X).
+                q(X) :- s(X).
+                s(X) :- t(X).
+                s(X) :- X = a.
+                ?p.
+                """;
+
+        Lexer lexer = new Lexer(source);
+
+        Parser parser = new Parser(lexer.getTokens());
+
+        Program program = parser.parse();
+
+        // parsed result looks good
+        System.out.println();
+    }
 }

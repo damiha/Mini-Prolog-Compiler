@@ -10,4 +10,12 @@ public class Clause {
         this.clauseHead = clauseHead;
         this.goals = goals;
     }
+
+    public String predicateName(){
+        return clauseHead.structName;
+    }
+
+    public int arity(){
+        return clauseHead.terms.size();
+    }
 }

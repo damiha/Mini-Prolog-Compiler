@@ -115,6 +115,94 @@ public class Instr {
         }
     }
 
+    static class PushEnv extends Instr{
+        int m;
+
+        public PushEnv(int m){
+            this.m = m;
+        }
+
+        public String toString(){
+            return String.format("PushEnv %d", m);
+        }
+    }
+
+    static class PopEnv extends Instr{
+
+        public String toString(){
+            return "PopEnv";
+        }
+    }
+
+    static class SetBackTrackPoint extends Instr{
+
+        public String toString(){
+            return "SetBackTrackPoint";
+        }
+    }
+
+    static class DeleteBackTrackPoint extends Instr{
+
+        public String toString(){
+            return "DeleteBackTrackPoint";
+        }
+    }
+
+    static class Try extends Instr{
+        String jumpLabel;
+
+        public Try(String jumpLabel){
+            this.jumpLabel = jumpLabel;
+        }
+
+        public String toString(){
+            return String.format("Try %s", jumpLabel);
+        }
+    }
+
+    static class Init extends Instr{
+        String jumpLabel;
+
+        public Init(String jumpLabel){
+            this.jumpLabel = jumpLabel;
+        }
+
+        public String toString(){
+            return String.format("Init %s", jumpLabel);
+        }
+    }
+
+    static class Halt extends Instr{
+        int d;
+
+        public Halt(int d){
+            this.d = d;
+        }
+
+        public String toString(){
+            return String.format("Halt %d", d);
+        }
+    }
+
+    static class No extends Instr{
+
+        public String toString(){
+            return "No";
+        }
+    }
+
+    static class Jump extends Instr{
+        String jumpLabel;
+
+        public Jump(String jumpLabel){
+            this.jumpLabel = jumpLabel;
+        }
+
+        public String toString(){
+            return String.format("Jump %s", jumpLabel);
+        }
+    }
+
     static class Son extends Instr{
 
         int i;
