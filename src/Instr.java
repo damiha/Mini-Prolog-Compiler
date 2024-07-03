@@ -102,6 +102,32 @@ public class Instr {
         }
     }
 
+    static class Up extends Instr{
+
+        String jumpLabel;
+
+        public Up(String jumpLabel){
+            this.jumpLabel = jumpLabel;
+        }
+
+        public String toString(){
+            return String.format("Up %s", jumpLabel);
+        }
+    }
+
+    static class Son extends Instr{
+
+        int i;
+
+        public Son(int i){
+            this.i = i;
+        }
+
+        public String toString(){
+            return String.format("Son %d", i);
+        }
+    }
+
     static class PutStruct extends Instr{
 
         String functionName;
@@ -116,6 +142,25 @@ public class Instr {
             return String.format("PutStruct %s/%d", functionName, arity);
         }
     }
+
+    static class UStruct extends Instr{
+
+        String functionName;
+        int arity;
+        String jumpLabel;
+
+        public UStruct(String functionName, int arity, String jumpLabel){
+            this.functionName = functionName;
+            this.arity = arity;
+            this.jumpLabel = jumpLabel;
+        }
+
+        public String toString(){
+            return String.format("UStruct %s/%d %s", functionName, arity, jumpLabel);
+        }
+    }
+
+
 
     static class Mark extends Instr{
         String jumpLabel;
@@ -148,6 +193,20 @@ public class Instr {
         @Override
         public String toString(){
             return "Bind";
+        }
+    }
+
+    static class Check extends Instr{
+
+        int i;
+
+        public Check(int i){
+            this.i = i;
+        }
+
+        @Override
+        public String toString(){
+            return String.format("Check %d", i);
         }
     }
 

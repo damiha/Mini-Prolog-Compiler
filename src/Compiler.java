@@ -2,6 +2,9 @@
 import static compiler.GenerationMode.*;
 import compiler.GenerationMode;
 
+import java.util.HashSet;
+import java.util.Set;
+
 public class Compiler implements Term.Visitor<Code>, Goal.Visitor<Code> {
 
     // if true, uses codeU for the right hand side of the unification
@@ -18,6 +21,8 @@ public class Compiler implements Term.Visitor<Code>, Goal.Visitor<Code> {
         return term.accept(this, A);
     }
 
+    public Code codeU(Term term){ return term.accept(this, U); }
+
     public Code codeG(Term term){
         return term.accept(this, G);
     }
@@ -30,17 +35,23 @@ public class Compiler implements Term.Visitor<Code>, Goal.Visitor<Code> {
     @Override
     public Code visitAtom(Term.Atom atom, GenerationMode mode) {
 
-        checkGenMode(mode, A);
+        checkGenMode(mode, A, U);
 
         Code code = new Code();
-        code.addInstruction(new Instr.PutAtom(atom.atomName));
+
+        if(mode == A) {
+            code.addInstruction(new Instr.PutAtom(atom.atomName));
+        }
+        else if(mode == U){
+            code.addInstruction(new Instr.UAtom(atom.atomName));
+        }
         return code;
     }
 
     @Override
     public Code visitVar(Term.Var var, GenerationMode mode) {
 
-        checkGenMode(mode, A);
+        checkGenMode(mode, A, U);
 
         Code code = new Code();
 
@@ -48,7 +59,12 @@ public class Compiler implements Term.Visitor<Code>, Goal.Visitor<Code> {
             env.put(var.varName);
         }
 
-        code.addInstruction(new Instr.PutVar(env.get(var.varName)));
+        if(mode == A) {
+            code.addInstruction(new Instr.PutVar(env.get(var.varName)));
+        }
+        else if(mode == U){
+            code.addInstruction(new Instr.UVar(env.get(var.varName)));
+        }
 
         return code;
     }
@@ -56,22 +72,33 @@ public class Compiler implements Term.Visitor<Code>, Goal.Visitor<Code> {
     @Override
     public Code visitAnon(Term.Anon anon, GenerationMode mode) {
 
-        checkGenMode(mode, A);
+        checkGenMode(mode, A, U);
 
         Code code = new Code();
-        code.addInstruction(new Instr.PutAnon());
+
+        if(mode == A) {
+            code.addInstruction(new Instr.PutAnon());
+        }
+        else if(mode == U){
+            code.addInstruction(new Instr.Pop());
+        }
         return code;
     }
 
     @Override
     public Code visitRef(Term.Ref ref, GenerationMode mode) {
 
-        checkGenMode(mode, A);
+        checkGenMode(mode, A, U);
 
         Code code = new Code();
 
         // for a ref, the variable name must already be in the environment
-        code.addInstruction(new Instr.PutRef(env.get(ref.refName)));
+        if(mode == A) {
+            code.addInstruction(new Instr.PutRef(env.get(ref.refName)));
+        }
+        else if(mode == U){
+            code.addInstruction(new Instr.URef(env.get(ref.refName)));
+        }
 
         return code;
     }
@@ -79,7 +106,7 @@ public class Compiler implements Term.Visitor<Code>, Goal.Visitor<Code> {
     @Override
     public Code visitStruct(Term.Struct struct, GenerationMode mode) {
 
-        checkGenMode(mode, A, G);
+        checkGenMode(mode, A, G, U);
 
         Code code = new Code();
 
@@ -109,7 +136,54 @@ public class Compiler implements Term.Visitor<Code>, Goal.Visitor<Code> {
 
             code.setJumpLabelAtEnd(continueAfterCallLabel);
         }
+        else if(mode == U){
+
+            String jumpToCreation = code.getNewJumpLabel();
+            String jumpOverCreation = code.getNewJumpLabel();
+
+            int arity = struct.terms.size();
+
+            code.addInstruction(new Instr.UStruct(struct.structName, arity, jumpToCreation));
+
+            for(int i = 0; i  < arity; i++){
+                code.addInstruction(new Instr.Son(i + 1));
+                code.addCode(codeU(struct.terms.get(i)));
+            }
+
+            code.addInstruction(new Instr.Up(jumpOverCreation));
+            code.setJumpLabelAtEnd(jumpToCreation);
+
+            // now, the creation part begins
+            check(code, initVars(struct));
+
+            code.addCode(codeA(struct));
+
+            code.addInstruction(new Instr.Bind());
+
+            code.setJumpLabelAtEnd(jumpOverCreation);
+        }
         return code;
+    }
+
+    // generates check instructions for all refs
+    private void check(Code code, Set<Term.Ref> refs){
+        for(Term.Ref ref : refs){
+            code.addInstruction(new Instr.Check(env.get(ref.refName)));
+        }
+    }
+
+    private Set<Term.Ref> initVars(Term.Struct struct){
+        Set<Term.Ref> initializedVars = new HashSet<>();
+
+        for(Term subTerm : struct.terms){
+            if(subTerm instanceof Term.Ref){
+                initializedVars.add((Term.Ref) subTerm);
+            }
+            else if(subTerm instanceof Term.Struct){
+                initializedVars.addAll(initVars((Term.Struct) subTerm));
+            }
+        }
+        return initializedVars;
     }
 
     private void checkGenMode(GenerationMode mode, GenerationMode... allowedModes){
@@ -152,7 +226,10 @@ public class Compiler implements Term.Visitor<Code>, Goal.Visitor<Code> {
         else if(unification.leftHandSide instanceof Term.Ref){
             // bound variable, we need to unify
             if(isUnificationOptimized){
-                throw new RuntimeException("Not implemented yet.");
+                code.addCode(codeA(unification.leftHandSide));
+
+                // this is the optimized stuff
+                code.addCode(codeU(unification.rightHandSide));
             }
             else{
                 code.addCode(codeA(unification.leftHandSide));

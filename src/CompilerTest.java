@@ -143,4 +143,55 @@ public class CompilerTest {
 
         assertEquals(expected.toString(), compiled.toString());
     }
+
+    @Test
+    public void testOptStructUnify(){
+        Compiler compiler = new Compiler();
+        compiler.env.put("X");
+        compiler.env.put("Y");
+        compiler.env.put("Z");
+
+        Term.Struct struct = new Term.Struct("f", List.of(
+                new Term.Struct("g", List.of(new Term.Ref("X"), new Term.Var("Y"))),
+                new Term.Atom("a"),
+                new Term.Var("Z")
+        ));
+
+        Code compiled = compiler.codeU(struct);
+
+        Code expected = new Code();
+        expected.addInstruction(new Instr.UStruct("f", 3, "_0"));
+        expected.addInstruction(new Instr.Son(1));
+        expected.addInstruction(new Instr.UStruct("g", 2, "_2"));
+        expected.addInstruction(new Instr.Son(1));
+        expected.addInstruction(new Instr.URef(1));
+        expected.addInstruction(new Instr.Son(2));
+        expected.addInstruction(new Instr.UVar(2));
+        expected.addInstruction(new Instr.Up("_3"));
+
+        expected.addInstruction(new Instr.Check(1), "_2");
+        expected.addInstruction(new Instr.PutRef(1));
+        expected.addInstruction(new Instr.PutVar(2));
+        expected.addInstruction(new Instr.PutStruct("g", 2));
+        expected.addInstruction(new Instr.Bind());
+
+        expected.addInstruction(new Instr.Son(2), "_3");
+        expected.addInstruction(new Instr.UAtom("a"));
+        expected.addInstruction(new Instr.Son(3));
+        expected.addInstruction(new Instr.UVar(3));
+        expected.addInstruction(new Instr.Up("_1"));
+
+        expected.addInstruction(new Instr.Check(1), "_0");
+        expected.addInstruction(new Instr.PutRef(1));
+        expected.addInstruction(new Instr.PutVar(2));
+        expected.addInstruction(new Instr.PutStruct("g", 2));
+        expected.addInstruction(new Instr.PutAtom("a"));
+        expected.addInstruction(new Instr.PutVar(3));
+        expected.addInstruction(new Instr.PutStruct("f", 3));
+        expected.addInstruction(new Instr.Bind());
+
+        expected.setJumpLabelAtEnd("_1");
+
+        assertEquals(expected.toString(), compiled.toString());
+    }
 }

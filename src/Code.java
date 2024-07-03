@@ -58,6 +58,16 @@ public class Code {
                 ((Instr.Mark) instr).jumpLabel = oldToNewJumpLabels.get(oldLabel);
             }
 
+            else if(instr instanceof Instr.Up){
+                String oldLabel = ((Instr.Up) instr).jumpLabel;
+                ((Instr.Up) instr).jumpLabel = oldToNewJumpLabels.get(oldLabel);
+            }
+
+            else if(instr instanceof Instr.UStruct){
+                String oldLabel = ((Instr.UStruct) instr).jumpLabel;
+                ((Instr.UStruct) instr).jumpLabel = oldToNewJumpLabels.get(oldLabel);
+            }
+
             // TODO: update the call instruction
         }
 
