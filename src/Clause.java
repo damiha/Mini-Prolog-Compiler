@@ -18,4 +18,15 @@ public class Clause {
     public int arity(){
         return clauseHead.terms.size();
     }
+
+    public String toString(){
+        StringBuilder res = new StringBuilder(clauseHead.toString() + " :- ");
+
+        int i = 0;
+        for(Goal goal : goals){
+            res.append(goal.toString()).append(i < arity() - 1 ? ", " : "");
+        }
+
+        return res.toString();
+    }
 }

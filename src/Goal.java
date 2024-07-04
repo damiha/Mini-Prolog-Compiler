@@ -14,6 +14,11 @@ public abstract class Goal {
         }
 
         @Override
+        public String toString(){
+            return struct.toString();
+        }
+
+        @Override
         <T> T accept(Visitor<T> visitor, GenerationMode mode) {
             return visitor.visitPredicateCall(this, mode);
         }
@@ -27,6 +32,11 @@ public abstract class Goal {
         public Unification(Term leftHandSide, Term rightHandSide){
             this.leftHandSide = leftHandSide;
             this.rightHandSide = rightHandSide;
+        }
+
+        @Override
+        public String toString(){
+            return String.format("%s = %s", leftHandSide.toString(), rightHandSide.toString());
         }
 
         @Override

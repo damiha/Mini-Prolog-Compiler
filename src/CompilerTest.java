@@ -310,7 +310,7 @@ public class CompilerTest {
         expected.addInstruction(new Instr.Mark("_1"));
         expected.addInstruction(new Instr.Call("p", 0));
 
-        expected.addInstruction(new Instr.Halt(0), "_1");
+        expected.addInstruction(new Instr.Halt(0, new String[0]), "_1");
         expected.addInstruction(new Instr.No(), "_0");
 
         expected.setPredicateLabelAtEnd("t/1");
@@ -393,7 +393,7 @@ public class CompilerTest {
         expected.addInstruction(new Instr.Mark("_1"));
         expected.addInstruction(new Instr.Call("p", 0));
 
-        expected.addInstruction(new Instr.Halt(0), "_1");
+        expected.addInstruction(new Instr.Halt(0, new String[0]), "_1");
         expected.addInstruction(new Instr.No(), "_0");
 
         expected.setPredicateLabelAtEnd("t/1");

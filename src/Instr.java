@@ -151,6 +151,8 @@ public class Instr {
     static class Try extends Instr{
         String jumpLabel;
 
+        String clauseDebugInfo;
+
         public Try(String jumpLabel){
             this.jumpLabel = jumpLabel;
         }
@@ -174,9 +176,11 @@ public class Instr {
 
     static class Halt extends Instr{
         int d;
+        String[] varNames;
 
-        public Halt(int d){
+        public Halt(int d, String[] varNames){
             this.d = d;
+            this.varNames = varNames;
         }
 
         public String toString(){
@@ -193,6 +197,9 @@ public class Instr {
 
     static class Jump extends Instr{
         String jumpLabel;
+
+        // added by the compiler
+        String jumpDebugInfo;
 
         public Jump(String jumpLabel){
             this.jumpLabel = jumpLabel;
@@ -218,16 +225,16 @@ public class Instr {
 
     static class PutStruct extends Instr{
 
-        String functionName;
+        String structName;
         int arity;
 
-        public PutStruct(String functionName, int arity){
-            this.functionName = functionName;
+        public PutStruct(String structName, int arity){
+            this.structName = structName;
             this.arity = arity;
         }
 
         public String toString(){
-            return String.format("PutStruct %s/%d", functionName, arity);
+            return String.format("PutStruct %s/%d", structName, arity);
         }
     }
 
@@ -263,16 +270,16 @@ public class Instr {
     }
 
     static class Call extends Instr{
-        String functionName;
+        String PredicateName;
         int arity;
 
-        public Call(String functionName, int arity){
-            this.functionName = functionName;
+        public Call(String PredicateName, int arity){
+            this.PredicateName = PredicateName;
             this.arity = arity;
         }
 
         public String toString(){
-            return String.format("Call %s/%d", functionName, arity);
+            return String.format("Call %s/%d", PredicateName, arity);
         }
     }
 
