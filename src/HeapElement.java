@@ -28,7 +28,7 @@ public abstract class HeapElement {
         }
 
         public String toString(){
-            return String.format("(R, points_to: %d", pointsToHeapAddress);
+            return String.format("(R, points_to: %d)", pointsToHeapAddress);
         }
 
         @Override

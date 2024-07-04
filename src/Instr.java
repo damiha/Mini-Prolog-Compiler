@@ -151,6 +151,8 @@ public class Instr {
     static class Try extends Instr{
         String jumpLabel;
 
+        String clauseDebugInfo;
+
         public Try(String jumpLabel){
             this.jumpLabel = jumpLabel;
         }
@@ -174,9 +176,11 @@ public class Instr {
 
     static class Halt extends Instr{
         int d;
+        String[] varNames;
 
-        public Halt(int d){
+        public Halt(int d, String[] varNames){
             this.d = d;
+            this.varNames = varNames;
         }
 
         public String toString(){
@@ -193,6 +197,9 @@ public class Instr {
 
     static class Jump extends Instr{
         String jumpLabel;
+
+        // added by the compiler
+        String jumpDebugInfo;
 
         public Jump(String jumpLabel){
             this.jumpLabel = jumpLabel;

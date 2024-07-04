@@ -34,11 +34,17 @@ public class VirtualMachine {
     // the 'Enter' behavior of the prolog repl
     boolean waitingForUserResponse = true;
 
+    boolean debugPrint = false;
+
     public VirtualMachine(){
         stack = new int[maxStackSize];
         tStack = new int[maxTStackSize];
         codeStore = new Instr[maxCodeSize];
         heap = new HeapElement[maxHeapSize];
+    }
+
+    private void setDebugPrint(){
+        debugPrint = true;
     }
 
     private void loadCode(Code code){
@@ -57,6 +63,12 @@ public class VirtualMachine {
         framePointer = -1;
         backtrackPoint = -1;
         trailPointer = -1;
+    }
+
+    private void debug(String message){
+        if(debugPrint){
+            System.out.println(String.format("[DEBUG]: %s", message));
+        }
     }
 
     // prints 'true', 'false' or the variable assignments on the terminal
@@ -151,10 +163,12 @@ public class VirtualMachine {
                 // the frame pointer is set to a different value at call!
             }
 
-            else if(instructionRegister instanceof Instr.Call){
+            else if(instructionRegister instanceof Instr.Call call){
 
                 String predicateName = ((Instr.Call) instructionRegister).PredicateName;
                 int n = ((Instr.Call) instructionRegister).arity;
+
+                debug(String.format("Calling %s/%d", predicateName, n));
 
                 String predicateLabel = String.format("%s/%d", predicateName, n);
 
@@ -192,6 +206,8 @@ public class VirtualMachine {
             else if(instructionRegister instanceof Instr.Unify){
                 // the top most value contains something we want to bind to
                 // the value one down contains a reference (something that is already bound)
+
+                debug(String.format("Unifying %s = %s", heap[stack[stackPointer - 1]], heap[stack[stackPointer]]));
 
                 // now we can get into unification problems
                 unify(stack[stackPointer - 1], stack[stackPointer]);
@@ -252,6 +268,7 @@ public class VirtualMachine {
 
             else if(instructionRegister instanceof Instr.Try tryInstr){
 
+                debug(String.format("Trying clause:  %s", tryInstr.clauseDebugInfo));
 
                 // if we have s(X) :- t(X)
                 // and s(X) :- X = a
@@ -290,6 +307,12 @@ public class VirtualMachine {
 
                 // return to calling stack frame
                 framePointer = fpOld();
+            }
+
+            else if(instructionRegister instanceof Instr.Jump jump){
+                debug(String.format("Jumping to %s", jump.jumpDebugInfo));
+
+                programCounter = jumpTable.get(jump.jumpLabel);
             }
 
             else if(instructionRegister instanceof Instr.Init init){
@@ -336,8 +359,7 @@ public class VirtualMachine {
 
                         HeapElement finalHeapElement = heap[finalHeapAddress];
 
-                        // TODO: replace this with variable naming of the user
-                        res.append(String.format("X_%d = %s", i, finalHeapElement.getOutputRepresentation()));
+                        res.append(String.format("%s = %s", halt.varNames[i - 1], finalHeapElement.getOutputRepresentation()));
                     }
 
                     log(res.toString());
@@ -529,7 +551,8 @@ public class VirtualMachine {
     }
 
     private void backtrack(){
-        System.out.println("backtracking...");
+
+        debug("backtracking...");
 
         // the backtrack point is the frame pointer in the case stuff fails
         // there's also fp old
@@ -549,7 +572,8 @@ public class VirtualMachine {
     }
 
     private void reset(int heapX, int heapY){
-        System.out.println("Resetting...");
+
+        debug("Resetting...");
 
         // unbind variables
 

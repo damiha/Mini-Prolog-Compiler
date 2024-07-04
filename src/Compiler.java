@@ -2,13 +2,18 @@
 import static compiler.GenerationMode.*;
 import compiler.GenerationMode;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 public class Compiler implements Term.Visitor<Code>, Goal.Visitor<Code> {
 
     // if true, uses codeU for the right hand side of the unification
     boolean isUnificationOptimized = false;
+
+    // adds the prolog code next to specific instructions
+    boolean compileWithDebugInformation = true;
 
     Environment env;
     public Compiler(){
@@ -55,12 +60,24 @@ public class Compiler implements Term.Visitor<Code>, Goal.Visitor<Code> {
 
         // generate the try instructions
         for(int i = 0; i < n - 1; i++){
-            code.addInstruction(new Instr.Try(jumpLabels[i]));
+
+            Instr.Try tryClause = new Instr.Try(jumpLabels[i]);
+
+            if(compileWithDebugInformation){
+                tryClause.clauseDebugInfo = predicate.clauses.get(i).toString();
+            }
+
+            code.addInstruction(tryClause);
         }
 
         code.addInstruction(new Instr.DeleteBackTrackPoint());
 
-        code.addInstruction(new Instr.Jump(jumpLabels[n - 1]));
+        Instr.Jump lastJump = new Instr.Jump(jumpLabels[n - 1]);
+
+        if(compileWithDebugInformation){
+            lastJump.jumpDebugInfo = predicate.clauses.get(n -1).toString();
+        }
+        code.addInstruction(lastJump);
 
         for(int i = 0; i < n; i++){
             Clause clause = predicate.clauses.get(i);
@@ -107,11 +124,21 @@ public class Compiler implements Term.Visitor<Code>, Goal.Visitor<Code> {
         // we want to print those
         int d = getFreeVars(program.query);
 
+        // this is for Halt d
+        String[] varNames = new String[d];
+
+        // only the var names are currently in the environment
+        for(String varName : env.data.keySet()){
+
+            // local variables start with 1
+            varNames[env.get(varName) - 1] = varName;
+        }
+
         code.addInstruction(new Instr.PushEnv(d));
 
         code.addCode(codeG(program.query));
 
-        code.addInstruction(new Instr.Halt(d));
+        code.addInstruction(new Instr.Halt(d, varNames));
 
         code.addInstruction(new Instr.No(), labelGoalFailed);
 
@@ -254,7 +281,8 @@ public class Compiler implements Term.Visitor<Code>, Goal.Visitor<Code> {
 
             int arity = struct.terms.size();
 
-            code.addInstruction(new Instr.Call(struct.structName, arity));
+            Instr.Call call = new Instr.Call(struct.structName, arity);
+            code.addInstruction(call);
 
             code.setJumpLabelAtEnd(continueAfterCallLabel);
         }

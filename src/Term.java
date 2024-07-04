@@ -13,6 +13,10 @@ abstract class Term {
             this.atomName = atomName;
         }
 
+        public String toString(){
+            return atomName;
+        }
+
         @Override
         <T> T accept(Visitor<T> visitor, GenerationMode mode) {
             return visitor.visitAtom(this, mode);
@@ -25,13 +29,21 @@ abstract class Term {
         <T> T accept(Visitor<T> visitor, GenerationMode mode) {
             return visitor.visitAnon(this, mode);
         }
+
+        public String toString(){
+            return "_";
+        }
     }
 
     static class Var extends Term{
         String varName;
 
-        public Var(String refName){
-            this.varName = refName;
+        public Var(String varName){
+            this.varName = varName;
+        }
+
+        public String toString(){
+            return varName;
         }
 
         @Override
@@ -45,6 +57,10 @@ abstract class Term {
 
         public Ref(String refName){
             this.refName = refName;
+        }
+
+        public String toString(){
+            return refName;
         }
 
         @Override
@@ -70,6 +86,21 @@ abstract class Term {
         public Struct(String structName, List<Term> terms){
             this.structName = structName;
             this.terms = terms;
+        }
+
+        public String toString(){
+            StringBuilder res = new StringBuilder(structName);
+
+            if(!terms.isEmpty()){
+                res.append("(");
+
+                for(int i = 0; i < terms.size(); i++){
+                    res.append(terms.get(i).toString()).append(i < terms.size() - 1 ? ", " : "");
+                }
+
+                res.append(")");
+            }
+            return res.toString();
         }
 
         @Override

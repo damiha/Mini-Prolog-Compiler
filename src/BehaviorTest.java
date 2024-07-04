@@ -56,7 +56,64 @@ public class BehaviorTest {
         vm.setNoWaitForUser();
 
         vm.run(compiled);
+    }
 
+    @Test
+    public void testExampleUnoptimized3(){
 
+        // who is mortal?
+        String source = """
+                sibling(mary, john).
+                sibling(X, Y) :- sibling(Y, X).
+                ?sibling(john, mary).
+                """;
+
+        Lexer lexer = new Lexer(source);
+
+        Parser parser = new Parser(lexer.getTokens());
+
+        Program program = parser.parse();
+
+        Compiler compiler = new Compiler();
+        compiler.isUnificationOptimized = false;
+
+        Code compiled = compiler.code(program);
+
+        VirtualMachine vm = new VirtualMachine();
+        vm.setNoWaitForUser();
+
+        vm.run(compiled);
+    }
+
+    @Test
+    public void testExampleUnoptimized4(){
+
+        // who is mortal?
+        String source = """
+                father(john, jack).
+                mother(mary, jack).
+                father(jack, james).
+                parent(X, Y) :- father(X, Y).
+                parent(X, Y) :- mother(X, Y).
+                ancestor(X, Y) :- parent(X, Y).
+                ancestor(X, Y) :- parent(X, Z), ancestor(Z, Y).
+                ?ancestor(john, X).
+                """;
+
+        Lexer lexer = new Lexer(source);
+
+        Parser parser = new Parser(lexer.getTokens());
+
+        Program program = parser.parse();
+
+        Compiler compiler = new Compiler();
+        compiler.isUnificationOptimized = false;
+
+        Code compiled = compiler.code(program);
+
+        VirtualMachine vm = new VirtualMachine();
+        vm.setNoWaitForUser();
+
+        vm.run(compiled);
     }
 }
