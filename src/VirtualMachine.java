@@ -217,36 +217,137 @@ public class VirtualMachine {
             }
 
             else if(instructionRegister instanceof Instr.Check check){
-                throw new RuntimeException("Instructions of codeU are added later.");
+
+                // we try to unify structs
+                // the check instruction is only used when the top most stack value (the heap address)
+                // pointed to an unbound variable
+
+                // check is generated as part of check i vars
+
+                // because we have an unbound variable, we just have to check that X = f(X) doesn't happen
+
+                if(!check(stack[stackPointer], deref(stack[framePointer + check.i]))){
+                    backtrack();
+                }
+
+                // stackPointer is NOT decremented (otherwise the checks below couldn't use it)
             }
 
             else if(instructionRegister instanceof Instr.Son son){
-                throw new RuntimeException("Instructions of codeU are added later.");
+
+                // we have to unify all the children of the struct
+                // the struct contains heap addresses at 1....n
+
+                // they might not be maximally dereferenced
+                HeapElement.StructCell structCell = (HeapElement.StructCell) heap[stack[stackPointer] + son.i];
+                stack[stackPointer + 1] = deref(structCell.i);
+                stackPointer++;
             }
 
             else if(instructionRegister instanceof Instr.Up up){
-                throw new RuntimeException("Instructions of codeU are added later.");
+                // reference to the structure is on top of the stack
+                // all unification steps worked
+                // can be popped
+
+                // the struct on the right hand side never was on the stack explicitely (only the son instructions etc it created)
+                // we pop the reference to the struct on the left hand side
+                stackPointer--;
+                programCounter = jumpTable.get(up.jumpLabel);
             }
 
             else if(instructionRegister instanceof Instr.UAtom uatom){
-                throw new RuntimeException("Instructions of codeU are added later.");
+
+                // the uatom command hasn't created anything on the heap
+                // hasn't pushed anything to the stack
+                // top most address is from the reference
+                int heapAddress = stack[stackPointer];
+
+                HeapElement heapElement = heap[heapAddress];
+
+                // only decrement by one, not by two (because atom is not on the stack anymore)
+                stackPointer--;
+
+                if(heapElement instanceof HeapElement.Atom hAtom && (uatom.atomName.equals(hAtom.atomName))){
+                    // no op
+                    // unification worked
+                }
+                else if(heapElement instanceof HeapElement.Variable hVar){
+                    // bind to the atom
+                    heap[heapPointer] = new HeapElement.Atom(uatom.atomName);
+
+                    hVar.pointsToHeapAddress = heapPointer++;
+
+                    trail(heapAddress);
+
+                    // no op
+                }
+                else{
+                    backtrack();
+                }
             }
 
             else if(instructionRegister instanceof Instr.UVar uvar){
-                throw new RuntimeException("Instructions of codeU are added later.");
+
+                // something of the form X = Y
+                // this unification always works
+
+                // we try to unify the top most address with the one at FP + i
+
+                // the one at fp + i now points to the topmost stack address
+                stack[framePointer + uvar.relativeAddress] = stack[stackPointer];
+                stackPointer--;
             }
 
             else if(instructionRegister instanceof Instr.URef uref){
-                throw new RuntimeException("Instructions of codeU are added later.");
+                // this is the only time we have to call the expensive unify function
+                // that's why we invented the codeU in the first place
+
+                // stack[stackPointer] and stack[framePointer + i] both contain
+                // heap address so unify makes sense (expects heap addresses)
+                unify(stack[stackPointer], deref(stack[framePointer + uref.relativeAddress]));
+
+                stackPointer--;
             }
 
             // that's the 'UAnon'
             else if(instructionRegister instanceof Instr.Pop){
-                throw new RuntimeException("Instructions of codeU are added later.");
+                // top most address is X
+                // we want to do the unification X = _
+                // this can never lead to problems (X remains unbound)
+                stackPointer--;
             }
 
             else if(instructionRegister instanceof Instr.UStruct ustruct){
-                throw new RuntimeException("Instructions of codeU are added later.");
+
+                HeapElement heapElement = heap[stack[stackPointer]];
+
+                if(heapElement instanceof HeapElement.StructHead structHead
+                        && (structHead.structName.equals(ustruct.functionName))
+                        && (structHead.arity == ustruct.arity)
+                ){
+                    // the outer most layer matches
+                    // we unify f(...) = f(...)
+                    // the son i and upB instructions below check if the inner contents can
+                    // be unified as well
+
+                    // if yes, we jump with the up B over the 'check i vars' and the 'materialization'
+
+                }
+                else if(heapElement instanceof HeapElement.Variable var){
+                    // We have something like X = f(g(Y), z)
+                    // now we just have to make sure X doesn't appear somewhere on the right
+                    // that's the check i vars
+
+                    // the unbound var on the left has to be bound to some actual value
+                    // so 'materialize' the struct via a codeA and then call bind
+
+
+                    // all of that is done at the jump label
+                    programCounter = jumpTable.get(ustruct.jumpLabel);
+                }
+                else{
+                    backtrack();
+                }
             }
 
             else if(instructionRegister instanceof Instr.PushEnv pushEnv){
